@@ -9,7 +9,7 @@ from rest_framework.exceptions import AuthenticationFailed
 import jwt
 class ManageBlog(APIView):
     def checkIsAuthenticated(self, request):
-        token = request.COOKIES.get('jwt')
+        token = request.headers['Authorization']
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
         try:
@@ -28,7 +28,9 @@ class ManageBlog(APIView):
         user=User.objects.get(id=payload['id'])
         serializers.save(author=user)
 
-        return Response(serializers.data)
+        return Response({
+            'status':"true",
+            'data':serializers.data})
     def put(self,request,id):
         
         payload =self.checkIsAuthenticated(request)
@@ -47,10 +49,25 @@ class ManageBlog(APIView):
     def get(self, request):
         blog = Blog.objects.all()
         serializer = BlogSerializers(blog, many=True)
-        return Response(serializer.data)
+        return Response({
+            "status":True,
+            "data":serializer.data
+            })
+            
 
 class getTagList(APIView):
     def get(self, request,tag):
         blog = Blog.objects.filter(tags__contains=tag+",")
         serializer = BlogSerializers(blog, many=True)
-        return Response(serializer.data)
+        return Response({
+            "status":True,
+            "data":serializer.data
+            })
+class getBlog(APIView):
+    def get(self, request,id):
+        blog = Blog.objects.filter(id=id).first()
+        serializer = BlogSerializers(blog)
+        return Response({
+            "status":True,
+            "data":serializer.data
+            })

@@ -5,12 +5,16 @@ from .models import User
 from rest_framework.exceptions import AuthenticationFailed
 import jwt, datetime
 
+
 class RegisterView(APIView):
     def post(self, request):
         serializers = UserSerializers(data=request.data)
         serializers.is_valid(raise_exception=True)
         serializers.save()
-        return Response(serializers.data)
+        return Response({
+            "success": True,
+            "message" : "User registerd please login."
+            })
 
 class LoginView(APIView):
     def post(self, request):
@@ -35,16 +39,19 @@ class LoginView(APIView):
 
         response = Response()
 
-        response.set_cookie(key='jwt', value=token, httponly=True)
+        response.set_cookie(key='jwt', value=token, httponly=True,path="/")
         response.data = {
-            'jwt': token
+            'jwt': token,
+            'user_id': user.id,
+            "success": True,
+            "message" : "User logged in."
         }
         return response
 class UserView(APIView):
 
     def get(self, request):
         token = request.COOKIES.get('jwt')
-
+        
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 

@@ -10,3 +10,6 @@ class Blog(models.Model):
     body = models.TextField()
     date = models.DateTimeField(auto_now_add=True)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    def __unicode__(self):
+        return self.title
