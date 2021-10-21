@@ -7,20 +7,21 @@ import sys
 sys.path.append("..")
 from rest_framework.exceptions import AuthenticationFailed
 import jwt
+def checkIsAuthenticated(request):
+    token = request.headers['Authorization']
+    if not token:
+        raise AuthenticationFailed('Unauthenticated!')
+    try:
+        payload = jwt.decode(token, 'secret', algorithms='HS256')
+    except jwt.ExpiredSignatureError:
+        raise AuthenticationFailed('Unauthenticated!')
+    return payload
+
 class ManageBlog(APIView):
-    def checkIsAuthenticated(self, request):
-        token = request.headers['Authorization']
-        if not token:
-            raise AuthenticationFailed('Unauthenticated!')
-        try:
-            payload = jwt.decode(token, 'secret', algorithms='HS256')
-        except jwt.ExpiredSignatureError:
-            raise AuthenticationFailed('Unauthenticated!')
-        return payload
 
     def post(self, request):
         try:
-            payload =self.checkIsAuthenticated(request)
+            payload =checkIsAuthenticated(request)
         except jwt.ExpiredSignatureError:
             raise AuthenticationFailed('Unauthenticated!')
         serializers = BlogSerializers(data=request.data)
@@ -33,7 +34,7 @@ class ManageBlog(APIView):
             'data':serializers.data})
     def put(self,request,id):
         
-        payload =self.checkIsAuthenticated(request)
+        payload =checkIsAuthenticated(request)
         try:
             blog=Blog.objects.get(id=id) 
         except ValueError:
@@ -47,7 +48,7 @@ class ManageBlog(APIView):
             "success":"success"
         })
     def get(self, request):
-        blog = Blog.objects.all()
+        blog = Blog.objects.all().order_by('-date')
         serializer = BlogSerializers(blog, many=True)
         return Response({
             "status":True,
@@ -56,18 +57,41 @@ class ManageBlog(APIView):
             
 
 class getTagList(APIView):
+
+
     def get(self, request,tag):
-        blog = Blog.objects.filter(tags__contains=tag+",")
+        try:
+            payload =checkIsAuthenticated(request)
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Unauthenticated!')
+        blog = Blog.objects.filter(tags__contains=tag+",").order_by('-date')
         serializer = BlogSerializers(blog, many=True)
         return Response({
             "status":True,
             "data":serializer.data
             })
 class getBlog(APIView):
+
     def get(self, request,id):
+        try:
+            payload =checkIsAuthenticated(request)
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Unauthenticated!')
         blog = Blog.objects.filter(id=id).first()
         serializer = BlogSerializers(blog)
         return Response({
             "status":True,
             "data":serializer.data
             })
+class getUserBlog(APIView):
+    def get(self, request,id):
+        try:
+            payload =checkIsAuthenticated(request)
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Unauthenticated!')
+        blog = Blog.objects.filter(author_id=payload['id']).first()
+        serializer = BlogSerializers(blog)
+        return Response({
+            "status":True,
+            "data":serializer.data
+        })
